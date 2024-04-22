@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 
 #define MAX_FILENAME_LENGTH 256 
 
@@ -19,13 +20,7 @@ typedef struct Snapshot {
     time_t last_modified;
 } Snapshot;
 
-void create_snapshot(Snapshot snap) {
-    FILE *output = fopen("Snapshot.txt", "w");
-    if (!output) {
-        print("error opening file");
-        exit(10);
-    }
-
+void create_snapshot(Snapshot snap, FILE* output) {
     char permission_string[11];
 
     snprintf(permission_string, sizeof(permission_string), "%c%c%c%c%c%c%c%c%c%c",
@@ -43,15 +38,17 @@ void create_snapshot(Snapshot snap) {
     struct passwd *pwd;
     struct passwd *grp;
     pwd = getpwuid(snap.owner);
-    grp = getpwuid(snap.group);
+    grp = getgrgid(snap.group);
 
     fprintf(output, "Filename: %s\n", snap.filename);
     fprintf(output, "Permissions: %s\n", permission_string);
-    fprintf(output, "Owner: %s\n", (snap.owner != NULL) ? owner->pw_name : "Unknown");
+    fprintf(output, "Owner: %s\n", (pwd != NULL) ? pwd->pw_name : "Unknown");
     fprintf(output, "Group: %s\n", (grp != NULL) ? grp->pw_name : "Unknown"); 
     fprintf(output, "Size: %d bytes\n", snap.size);
     fprintf(output, "Last Modified: %ld\n", snap.last_modified);
     fprintf(output, "\n");
+
+    fclose(output);
 }
 
 void parseDir(char path[]) {
@@ -93,7 +90,7 @@ void parseDir(char path[]) {
         if(S_IFDIR == (st.st_mode & S_IFMT))
             parseDir(next_path); 
         else
-            create_snapshot(snap);
+            create_snapshot(snap, output);
     }
 
     closedir(new_dir);
@@ -101,11 +98,19 @@ void parseDir(char path[]) {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "argument error\n", argv[0]);
+        fprintf(stderr, "argument error\n");
+        return 1;
+    }
+
+     FILE* output = fopen("Snapshot.txt", "w");
+    if (!output) {
+        perror("error opening file\n");
         return 1;
     }
 
     parseDir(argv[1]);
+
+    fclose(output);
 
     return 0;
 }
