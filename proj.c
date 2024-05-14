@@ -33,7 +33,7 @@ void openDirectories(char *directorPath, int pipeWrite){
                 if (!(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0))
                 {
                      snprintf(path, sizeof(path), "%s/%s", directorPath, entry->d_name);
-                     openDirectories(path);
+                     openDirectories(path, pipeWrite);
                 }
                 break;
 
@@ -103,7 +103,7 @@ void openDirectories(char *directorPath, int pipeWrite){
 
                 if(pipeWrite != -1){
                     if (pid == 0) {
-                        execlp("/bin/sh", "sh", "/Users/Alice/Desktop/verify_for_malicious.sh", filename, NULL);
+                        execlp("/bin/bash", "sh", "/home/ubuntu/OS/verify_for_malicious.sh", filename, NULL);
 
                         printf("execlp error\n");
                     } 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
         }
         if(pid[i-1] == 0){
           
-            openDirectories(argv[i], -1);
+            openDirectories(argv[i], 1);
             exit(0);
         }
 
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 
         pid_t verify = fork();
         if(verify == 0){
-            openDirectories(argv[i], 1)
+            openDirectories(argv[i], 1);
         }
     }
 
